@@ -1,0 +1,8 @@
+{
+  "name": "su-flea-market-shared",
+  "version": "1.0.0",
+  "description": "Shared constants and types for SU Flea Market",
+  "private": true,
+  "type": "module",
+  "main": "index.js"
+}
