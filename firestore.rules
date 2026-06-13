@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profiles are readable by any signed-in user.
+    // Writes go through Express ONLY — allowing client self-writes
+    // here would let a user edit their own role (e.g. set
+    // 'administrator') straight from the browser console.
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Listings: anyone authenticated can read approved+active.
+    // All writes through Express only — rules are the safety net.
+    match /listings/{listingId} {
+      allow read: if request.auth != null &&
+        resource.data.listingStatus == 'active' &&
+        resource.data.moderationStatus == 'approved';
+      allow write: if false;
+
+      match /images/{imageId} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+    }
+
+    // Messages: only sender or receiver can read (the real-time
+    // onSnapshot listener — queries must filter on senderId or
+    // receiverId == auth.uid for the rules engine to allow them).
+    // Client can only READ — writes go through Express.
+    match /messages/{messageId} {
+      allow read: if request.auth != null &&
+        (resource.data.senderId == request.auth.uid ||
+         resource.data.receiverId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Everything else (events, reports): server-only.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
